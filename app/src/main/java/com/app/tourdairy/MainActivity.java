@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
 
-        webview.loadUrl("https://tourdairy.cottonseeds.org");
+        webview.loadUrl("https://tourdairy.cottonseeds.org/login.php");
         //External storage permission for saving file
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
