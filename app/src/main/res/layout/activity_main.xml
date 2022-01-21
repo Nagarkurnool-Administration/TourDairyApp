@@ -13,4 +13,11 @@
         tools:layout_editor_absoluteY="1dp"
         android:id="@+id/webView"/>
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@+id/webView" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

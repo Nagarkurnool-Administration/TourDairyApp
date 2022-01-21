@@ -15,13 +15,16 @@ import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
     WebView webview;
+    private ProgressBar progressBar;
 
     @Override
     public void onBackPressed() {
@@ -56,6 +59,29 @@ public class MainActivity extends AppCompatActivity {
         webview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
 
         webview.loadUrl("https://tourdairy.cottonseeds.org/login.php");
+
+
+        // progress bar
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        webview.setWebChromeClient(new WebChromeClient() {
+
+            // page loading progress, gone when fully loaded
+            public void onProgressChanged(WebView view, int progress) {
+
+
+                if (progress < 100 && progressBar.getVisibility() == ProgressBar.GONE) {
+                    progressBar.setVisibility(ProgressBar.VISIBLE);
+                }
+
+                if (progress == 100) {
+                    progressBar.setVisibility(ProgressBar.GONE);
+                }
+                progressBar.setProgress(progress);
+
+
+            }
+        });
+
         //External storage permission for saving file
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
