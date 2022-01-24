@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.app.DownloadManager;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -41,6 +42,8 @@ import android.content.Context;
 public class MainActivity extends AppCompatActivity {
     WebView webview;
     private ProgressBar progressBar;
+    private ProgressDialog pd;
+    String webUrl = "https://tourdairy.cottonseeds.org";
 
     @Override
     public void onBackPressed() {
@@ -248,6 +251,35 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+//        progress dialog
+        pd = new ProgressDialog(MainActivity.this);
+        pd.setMessage("Loading Please Wait....");
+        webview.setWebViewClient(new mbfllixer(pd));
+        pd.setCanceledOnTouchOutside(false);
+
+
+
+    }
+
+//    progress dialog
+
+    public class mbfllixer extends WebViewClient {
+
+        ProgressDialog pd;
+        public mbfllixer(ProgressDialog pd){
+
+            this.pd=pd;
+            pd.show();
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            if (pd.isShowing()){
+
+                pd.dismiss();
+            }
+        }
 
     }
 
