@@ -51,8 +51,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public Context context;
-
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int FILECHOOSER_RESULTCODE = 1;
@@ -68,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        webview = (WebView) findViewById(R.id.webView);
+        webview = findViewById(R.id.webView);
 
         WebSettings webSettings = webview.getSettings();
 
@@ -87,11 +85,11 @@ public class MainActivity extends AppCompatActivity {
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
 
-        webview.loadUrl("https://tourdairy.cottonseeds.org/login.php");
+        webview.loadUrl("https://tourdairy.cottonseeds.org/");
 
 
         // progress bar
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar = findViewById(R.id.progressBar);
         webview.setWebChromeClient(new WebChromeClient() {
 
             // for Lollipop, all in one
@@ -157,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 // create an image file name
-                imageStorageDir = new File(imageStorageDir + File.separator + "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg");
+                imageStorageDir = new File(imageStorageDir + File.separator + "IMG_" + System.currentTimeMillis() + ".jpg");
                 return imageStorageDir;
             }
 
@@ -172,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                         imageStorageDir.mkdirs();
                     }
 
-                    File file = new File(imageStorageDir + File.separator + "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg");
+                    File file = new File(imageStorageDir + File.separator + "IMG_" + System.currentTimeMillis() + ".jpg");
 
                     mCapturedImageURI = Uri.fromFile(file); // save to the private variable
 
@@ -198,15 +196,6 @@ public class MainActivity extends AppCompatActivity {
             public void openFileChooser(ValueCallback<Uri> uploadMsg) {
                 openFileChooser(uploadMsg, "");
             }
-
-            // openFileChooser for other Android versions
-            /* may not work on KitKat due to lack of implementation of openFileChooser() or onShowFileChooser()
-               https://code.google.com/p/android/issues/detail?id=62220
-               however newer versions of KitKat fixed it on some devices */
-            public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
-                openFileChooser(uploadMsg, acceptType);
-            }
-
 
 
             // page loading progress, gone when fully loaded
@@ -240,26 +229,23 @@ public class MainActivity extends AppCompatActivity {
         }
         //handle downloading
 
-        webview.setDownloadListener(new DownloadListener() {
-            @Override
-            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+        webview.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
 
-                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                request.setMimeType(mimeType);
-                String cookies = CookieManager.getInstance().getCookie(url);
-                request.addRequestHeader("cookie", cookies);
-                request.addRequestHeader("User-Agent", userAgent);
-                request.setDescription("Downloading file....");
-                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
-                request.allowScanningByMediaScanner();
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
-                DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-                dm.enqueue(request);
-                Toast.makeText(getApplicationContext(), "Downloading File", Toast.LENGTH_SHORT).show();
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setMimeType(mimeType);
+            String cookies = CookieManager.getInstance().getCookie(url);
+            request.addRequestHeader("cookie", cookies);
+            request.addRequestHeader("User-Agent", userAgent);
+            request.setDescription("Downloading file....");
+            request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+            request.allowScanningByMediaScanner();
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            dm.enqueue(request);
+            Toast.makeText(getApplicationContext(), "Downloading File", Toast.LENGTH_SHORT).show();
 
 
-            }
         });
 
 
