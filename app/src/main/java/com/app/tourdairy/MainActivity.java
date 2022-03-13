@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
 
-        webview.loadUrl("https://tourdairy.cottonseeds.org/");
+        webview.loadUrl("https://tourdairy.tsngkl.in/");
 
 
         // progress bar
