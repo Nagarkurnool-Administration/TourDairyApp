@@ -1,6 +1,9 @@
 package com.app.tourdairy;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.DownloadManager;
@@ -17,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.GeolocationPermissions;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -43,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     WebView webview;
     private ProgressBar progressBar;
     private ProgressDialog pd;
-    String webUrl = "https://tourdairy.cottonseeds.org";
+    String webUrl = "https://tourdairy.tsngkl.in";
 
     @Override
     public void onBackPressed() {
@@ -64,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private ValueCallback<Uri[]> mFilePathCallback;
     private String mCameraPhotoPath;
 
-
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 100;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -257,8 +261,62 @@ public class MainActivity extends AppCompatActivity {
         webview.setWebViewClient(new mbfllixer(pd));
         pd.setCanceledOnTouchOutside(false);
 
+        // Check and request location permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            } else {
+                // Location permissions are already granted, enable location features
+                enableLocationFeatures();
+            }
+        } else {
+            // For devices below Android M, no need to request permission, enable location features
+            enableLocationFeatures();
+        }
 
 
+
+    }
+
+    private void enableLocationFeatures() {
+        // Enable geolocation support in WebView
+        webview.getSettings().setGeolocationEnabled(true);
+
+        // Set up a WebChromeClient to handle geolocation permissions requests
+        webview.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                // Check if the app has location permissions
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    // Grant permission for geolocation
+                    callback.invoke(origin, true, false);
+                } else {
+                    // Request location permissions
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            LOCATION_PERMISSION_REQUEST_CODE);
+                }
+            }
+        });
+    }
+
+    // Handle permission request results
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Location permissions granted, enable location features
+                enableLocationFeatures();
+            } else {
+                // Location permissions denied, handle accordingly (e.g., show a message)
+                // You can decide whether to proceed without location features in this case
+            }
+        }
     }
 
 //    progress dialog
