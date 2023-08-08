@@ -6,8 +6,8 @@ android {
         applicationId "com.app.tourdairy"
         minSdkVersion 15
         targetSdkVersion 31
-        versionCode 4
-        versionName "1.3"
+        versionCode 7
+        versionName "7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
