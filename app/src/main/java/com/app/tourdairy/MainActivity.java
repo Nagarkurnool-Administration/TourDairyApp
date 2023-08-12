@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.KeyEvent;
 import android.webkit.GeolocationPermissions;
 import android.webkit.PermissionRequest;
@@ -114,15 +115,28 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 fileUploadCallback = filePathCallback;
-                Intent intent = fileChooserParams.createIntent();
+
+                // Create intent to pick an image from the gallery
+                Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                galleryIntent.setType("image/*");
+
+                // Create intent to capture an image using the camera
+                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                // Create chooser intent to present both options to the user
+                Intent chooserIntent = Intent.createChooser(galleryIntent, "Choose Image Source");
+                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { cameraIntent });
+
                 try {
-                    fileChooserLauncher.launch(intent);
+                    fileChooserLauncher.launch(chooserIntent);
                 } catch (ActivityNotFoundException e) {
                     fileUploadCallback = null;
                     return false;
                 }
                 return true;
             }
+
 
         });
 
