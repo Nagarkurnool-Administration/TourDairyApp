@@ -18,6 +18,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -27,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final int FILE_CHOOSER_RESULT_CODE = 1002;
+    private ActivityResultLauncher<Intent> fileChooserLauncher;
+
 
     private WebView webView;
     private ProgressBar progressBar;
@@ -36,6 +41,24 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        fileChooserLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        if (fileUploadCallback != null) {
+                            Uri[] resultUris = WebChromeClient.FileChooserParams.parseResult(result.getResultCode(), result.getData());
+                            fileUploadCallback.onReceiveValue(resultUris);
+                            fileUploadCallback = null;
+                        }
+                    } else {
+                        if (fileUploadCallback != null) {
+                            fileUploadCallback.onReceiveValue(null);
+                            fileUploadCallback = null;
+                        }
+                    }
+                });
+
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -93,13 +116,14 @@ public class MainActivity extends AppCompatActivity {
                 fileUploadCallback = filePathCallback;
                 Intent intent = fileChooserParams.createIntent();
                 try {
-                    startActivityForResult(intent, FILE_CHOOSER_RESULT_CODE);
+                    fileChooserLauncher.launch(intent);
                 } catch (ActivityNotFoundException e) {
                     fileUploadCallback = null;
                     return false;
                 }
                 return true;
             }
+
         });
 
         webView.loadUrl("https://tourdairy.tsngkl.in");
