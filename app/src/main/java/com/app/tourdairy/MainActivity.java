@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -51,46 +50,17 @@ public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private ProgressBar progressBar;
     private ValueCallback<Uri[]> fileUploadCallback;
-    // Create separate launchers for gallery and camera intents
-    private ActivityResultLauncher<Intent> galleryChooserLauncher;
-    private ActivityResultLauncher<Intent> cameraChooserLauncher;
-
-
+    private ActivityResultLauncher<Intent> imageChooserLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Initialize the mContext variable
-        mContext = this; // Store the context for later use
-
-        galleryChooserLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> handleGalleryChooserResult(result));
-
-        cameraChooserLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> handleCameraChooserResult(result));
-
-
-
+        mContext = this;
 
         fileChooserLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK) {
-                        if (fileUploadCallback != null) {
-                            Uri[] resultUris = WebChromeClient.FileChooserParams.parseResult(result.getResultCode(), result.getData());
-                            fileUploadCallback.onReceiveValue(resultUris);
-                            fileUploadCallback = null;
-                        }
-                    } else {
-                        if (fileUploadCallback != null) {
-                            fileUploadCallback.onReceiveValue(null);
-                            fileUploadCallback = null;
-                        }
-                    }
-                });
+                result -> handleImageChooserResult(result));
 
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -119,100 +89,97 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                        == PackageManager.PERMISSION_GRANTED) {
-                    callback.invoke(origin, true, false);
-                } else {
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            LOCATION_PERMISSION_REQUEST_CODE);
-                }
-            }
-
-            @Override
-            public void onPermissionRequest(PermissionRequest request) {
-                for (String resource : request.getResources()) {
-                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource) ||
-                            PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
-                        request.grant(new String[]{resource});
-                    }
-                }
-            }
-
-            // For handling file chooser dialog
-            @Override
-            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
-                fileUploadCallback = filePathCallback;
-
-                Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                galleryIntent.setType("image/*");
-
-                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                File imageFile = createImageFile();
-                if (imageFile != null) {
-                    cameraImageFilePath = imageFile.getAbsolutePath();
-                    Uri imageUri = FileProvider.getUriForFile(
-                            MainActivity.this,
-                            "com.app.tourdairy.fileprovider",
-                            imageFile
-                    );
-                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-                }
-
-                Intent chooserIntent = Intent.createChooser(galleryIntent, "Choose Image Source");
-                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
-
-                try {
-                    cameraChooserLauncher.launch(chooserIntent);
-                } catch (ActivityNotFoundException e) {
-                    fileUploadCallback = null;
-                    return false;
-                }
-                return true;
-            }
-
-            private File createImageFile() {
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-                String imageFileName = "JPEG_" + timeStamp + "_";
-
-                // Debug: Log the storage directory path
-                File storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "TourDairy");
-                Log.d("FileProvider", "Storage directory: " + storageDir.getAbsolutePath());
-
-                if (!storageDir.exists()) {
-                    storageDir.mkdirs(); // Create the directory if it doesn't exist
-                }
-
-                try {
-                    File image = File.createTempFile(imageFileName, ".jpg", storageDir);
-                    Log.d("FileProvider", "Image file path: " + image.getAbsolutePath());
-                    return image;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return null;
-            }
-
-        });
+        webView.setWebChromeClient(new MyWebChromeClient());
 
         webView.loadUrl("https://tourdairy.tsngkl.in");
     }
-    // Handle the gallery chooser result
-    private void handleGalleryChooserResult(ActivityResult result) {
-        if (fileUploadCallback != null) {
-            Uri[] resultUris = WebChromeClient.FileChooserParams.parseResult(result.getResultCode(), result.getData());
-            fileUploadCallback.onReceiveValue(resultUris);
-            fileUploadCallback = null;
+
+    private class MyWebChromeClient extends WebChromeClient {
+        @Override
+        public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                callback.invoke(origin, true, false);
+            } else {
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            }
+        }
+
+        @Override
+        public void onPermissionRequest(PermissionRequest request) {
+            for (String resource : request.getResources()) {
+                if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource) ||
+                        PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(resource)) {
+                    request.grant(new String[]{resource});
+                }
+            }
+        }
+
+        @Override
+        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+            fileUploadCallback = filePathCallback;
+
+            Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
+            galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
+            galleryIntent.setType("image/*");
+
+            Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            File imageFile = createImageFile();
+            if (imageFile != null) {
+                cameraImageFilePath = imageFile.getAbsolutePath();
+                Uri imageUri = FileProvider.getUriForFile(
+                        MainActivity.this,
+                        "com.app.tourdairy.fileprovider",
+                        imageFile
+                );
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+            }
+
+            Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+            chooserIntent.putExtra(Intent.EXTRA_INTENT, galleryIntent);
+            chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose Image Source");
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{cameraIntent});
+
+            try {
+                fileChooserLauncher.launch(chooserIntent);
+            } catch (ActivityNotFoundException e) {
+                fileUploadCallback = null;
+                return false;
+            }
+            return true;
+        }
+
+        private File createImageFile() {
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+
+            File storageDir = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "TourDairy");
+            Log.d("FileProvider", "Storage directory: " + storageDir.getAbsolutePath());
+
+            if (!storageDir.exists()) {
+                storageDir.mkdirs();
+            }
+
+            try {
+                File image = File.createTempFile(imageFileName, ".jpg", storageDir);
+                Log.d("FileProvider", "Image file path: " + image.getAbsolutePath());
+                return image;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
         }
     }
 
-    private void handleCameraChooserResult(ActivityResult result) {
+    private void handleImageChooserResult(ActivityResult result) {
         if (fileUploadCallback != null) {
-            if (cameraImageFilePath != null) {
+            Intent data = result.getData();
+            if (data != null && data.getData() != null) {
+                Uri[] resultUris = WebChromeClient.FileChooserParams.parseResult(result.getResultCode(), data);
+                fileUploadCallback.onReceiveValue(resultUris);
+            } else if (cameraImageFilePath != null) {
                 Uri imageUri = Uri.fromFile(new File(cameraImageFilePath));
                 Uri[] resultUris = new Uri[]{imageUri};
                 fileUploadCallback.onReceiveValue(resultUris);
@@ -223,8 +190,6 @@ public class MainActivity extends AppCompatActivity {
             fileUploadCallback = null;
         }
     }
-
-
     // Handle permissions request results
     @SuppressLint("MissingPermission")
     @Override
@@ -274,4 +239,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onKeyDown(keyCode, event);
     }
+
 }
